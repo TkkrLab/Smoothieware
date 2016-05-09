@@ -36,24 +36,33 @@ void PlayLed::on_module_loaded()
 
 void PlayLed::on_config_reload(void *argument)
 {
-    string ledpin = "4.28!";
+    string ledpin = "nc";
+    string led2pin = "nc";
 
-    ledpin = THEKERNEL->config->value( pause_led_pin_checksum )->by_default(ledpin)->as_string(); // check for pause_led_pin first
-    ledpin = THEKERNEL->config->value( play_led_pin_checksum  )->by_default(ledpin)->as_string(); // override with play_led_pin if it's found
+    led2pin = THEKERNEL->config->value( pause_led_pin_checksum )->by_default(ledpin)->as_string();
+    ledpin = THEKERNEL->config->value( play_led_pin_checksum  )->by_default(ledpin)->as_string();
 
     led.from_string(ledpin)->as_output()->set(false);
+    led2.from_string(led2pin)->as_output()->set(false);
 }
 
 uint32_t PlayLed::led_tick(uint32_t)
 {
     if(THEKERNEL->is_halted()) {
-        led.set(!led.get());
+        led.set(0);
+        led2.set(!led2.get());
         return 0;
+    } else {
+      led2.set(0);
     }
 
     if(++cnt >= 6) { // 6 ticks ~ 500ms
         cnt= 0;
-        led.set(!THEKERNEL->conveyor->is_queue_empty());
+        if (THEKERNEL->conveyor->is_queue_empty()) {
+          led.set(1);
+        } else {
+          led.set(!led.get());
+        }
     }
 
     return 0;

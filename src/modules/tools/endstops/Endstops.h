@@ -52,7 +52,7 @@ class Endstops : public Module{
         float  trim_mm[3];
         float  fast_rates[3];
         float  slow_rates[3];
-        Pin    pins[6];
+        Pin    pins[7];
         volatile float feed_rate[3];
         struct {
             bool is_corexy:1;
@@ -63,6 +63,7 @@ class Endstops : public Module{
             uint8_t bounce_cnt:4;
             volatile char status:3;
         };
+        float  soft_max[3];
 };
 
 #endif

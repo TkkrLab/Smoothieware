@@ -109,6 +109,11 @@
 #define STEPPER THEKERNEL->robot->actuators
 #define STEPS_PER_MM(a) (STEPPER[a]->get_steps_per_mm())
 
+/* RENZE */
+#define alpha_soft_max         CHECKSUM("alpha_soft_max")
+#define beta_soft_max          CHECKSUM("beta_soft_max")
+#define gamma_soft_max         CHECKSUM("gamma_soft_max")
+//#define lid_switch             CHECKSUM("lid_switch")
 
 // Homing States
 enum {
@@ -248,6 +253,11 @@ void Endstops::load_config()
         // NOTE homing_position for rdelta is the angle of the actuator not the cartesian position
         if(!this->is_rdelta) this->homing_position[0] = this->homing_position[1] = 0;
     }
+    
+    this->soft_max[0] = THEKERNEL->config->value(alpha_soft_max)->by_default(0)->as_number();
+    this->soft_max[1] = THEKERNEL->config->value(beta_soft_max)->by_default(0)->as_number();
+    this->soft_max[2] = THEKERNEL->config->value(gamma_soft_max)->by_default(0)->as_number();
+    //this->pins[6].from_string( THEKERNEL->config->value(lid_switch          )->by_default("nc" )->as_string())->as_input();
 }
 
 bool Endstops::debounced_get(int pin)
@@ -294,22 +304,38 @@ void Endstops::on_idle(void *argument)
     }
 
     for( int c = X_AXIS; c <= Z_AXIS; c++ ) {
-        if(this->limit_enable[c] && STEPPER[c]->is_moving()) {
-            std::array<int, 2> minmax{{0, 3}};
-            // check min and max endstops
-            for (int i : minmax) {
-                int n = c + i;
-                if(debounced_get(n)) {
-                    // endstop triggered
-                    THEKERNEL->streams->printf("Limit switch %s was hit - reset or M999 required\n", endstop_names[n]);
-                    this->status = LIMIT_TRIGGERED;
-                    // disables heaters and motors, ignores incoming Gcode and flushes block queue
-                    THEKERNEL->call_event(ON_HALT, nullptr);
-                    return;
+        if(STEPPER[c]->is_moving()) {
+            if (this->limit_enable[c]) {
+                std::array<int, 2> minmax{{0, 3}};
+                // check min and max endstops
+                for (int i : minmax) {
+                    int n = c + i;
+                    if(debounced_get(n)) {
+                        // endstop triggered
+                        THEKERNEL->streams->printf("Limit switch %s was hit - reset or M999 required\n", endstop_names[n]);
+                        this->status = LIMIT_TRIGGERED;
+                        // disables heaters and motors, ignores incoming Gcode and flushes block queue
+                        THEKERNEL->call_event(ON_HALT, nullptr);
+                        return;
+                    }
                 }
             }
         }
     }
+    for( int c = 0; c < 3; c++ ) {
+        if(this->soft_max[c]>0 && THEKERNEL->robot->actuators[c]->get_current_position()>this->soft_max[c]) {
+            this->status = LIMIT_TRIGGERED;
+            THEKERNEL->call_event(ON_HALT, nullptr);
+            return;
+        }
+    }
+    /*if(this->pins[6].get()) {
+      THEKERNEL->streams->printf("Lid is open - reset or M999 required\n");
+      this->status = LIMIT_TRIGGERED;
+      // disables heaters and motors, ignores incoming Gcode and flushes block queue
+      THEKERNEL->call_event(ON_HALT, nullptr);
+      return;
+    }*/
 }
 
 // if limit switches are enabled, then we must move off of the endstop otherwise we won't be able to move

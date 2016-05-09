@@ -45,6 +45,11 @@ static const uint8_t icons[] = { // 16x80 - he1, he2, he3, bed, fan
 	0xa1, 0xc0, 0xa1, 0xc5, 0x93, 0xd9, 0x47, 0xc2, 0x37, 0x9c
 };
 
+
+static const uint8_t line[] = {
+0b11111111,0b11111111,0b11111111,0b11111111,0b11111111,0b11111111,0b11111111,0b11111111,0b11111111,0b11111111,0b11111111,0b11111111,0b11111111,0b11111111,0b11111111,0b11111111,
+};
+
 WatchScreen::WatchScreen()
 {
     speed_changed = false;
@@ -61,7 +66,7 @@ WatchScreen::~WatchScreen()
 void WatchScreen::on_enter()
 {
     THEPANEL->lcd->clear();
-    THEPANEL->setup_menu(4);
+    THEPANEL->setup_menu(8);
     get_current_status();
     get_current_pos(this->pos);
     get_sd_play_info();
@@ -209,7 +214,6 @@ void WatchScreen::get_sd_play_info()
         this->elapsed_time = p.elapsed_secs;
         this->sd_pcnt_played = p.percent_complete;
         THEPANEL->set_playing_file(p.filename);
-
     } else {
         this->elapsed_time = 0;
         this->sd_pcnt_played = 0;
@@ -219,10 +223,60 @@ void WatchScreen::get_sd_play_info()
 void WatchScreen::display_menu_line(uint16_t line)
 {
     // in menu mode
+    if (THEKERNEL->is_halted()) {
+      switch (line) {
+        case 0: THEPANEL->lcd->printf("HALTED               "); break;
+        case 1: THEPANEL->lcd->printf("---------------------"); break;
+        case 2: THEPANEL->lcd->printf("Lid has been opened  "); break;
+        case 3: THEPANEL->lcd->printf("or limit switch was  "); break;
+        case 4: THEPANEL->lcd->printf("triggered. Press and "); break;
+        case 5: THEPANEL->lcd->printf("hold yellow button   "); break;
+        case 6: THEPANEL->lcd->printf("for 5 sec to reset.  "); break;
+        case 7: THEPANEL->lcd->printf("X%4d Y%4d", (int)round(this->pos[0]), (int)round(this->pos[1])); break;
+        //default: THEPANEL->lcd->printf("EMPTY               "); break;
+      }
+    }
     switch ( line ) {
-        case 0:
-        {
-            auto& tm= this->temp_controllers;
+        case 0: THEPANEL->lcd->printf("%s", this->get_status()); break;
+        case 1: THEPANEL->lcd->printf("---------------------"); break;
+        case 2: THEPANEL->lcd->printf("X%4d Y%4d            %3d%%", (int)round(this->pos[0]), (int)round(this->pos[1]), this->current_speed); break;
+        case 3: {
+            if ((this->elapsed_time / 60 > 0)||(this->elapsed_time % 60)) {
+                THEPANEL->lcd->printf("Elapsed time: %2lu:%02lu", this->elapsed_time / 60, this->elapsed_time % 60);
+            } else {
+                THEPANEL->lcd->printf("                     ");
+            }
+          break;
+        }
+        case 4:{
+          if (THEPANEL->is_playing()) {
+            THEPANEL->lcd->printf("File: %s", THEPANEL->get_playing_file());
+          } else {
+            THEPANEL->lcd->printf("                     ");
+          }
+          break;
+        }
+        case 5: {
+            if (this->sd_pcnt_played>0) {
+                THEPANEL->lcd->printf("Progress: %3u%%      ", this->sd_pcnt_played);
+            } else {
+                THEPANEL->lcd->printf("                     ");
+            }
+        }
+        case 6: {
+          const char *ip = get_network();
+          if (ip == NULL) {
+            THEPANEL->lcd->printf("No network.            ");
+          } else {
+            THEPANEL->lcd->printf("%s             ", ip);
+          }
+          break;
+        }
+
+       default: THEPANEL->lcd->printf("                     "); break;
+    }
+
+            /*auto& tm= this->temp_controllers;
             if(tm.size() > 0) {
                 // only if we detected heaters in config
                 int n= 0;
@@ -247,12 +301,7 @@ void WatchScreen::display_menu_line(uint16_t line)
             }else{
                 //THEPANEL->lcd->printf("No Heaters");
             }
-            break;
-        }
-        case 1: THEPANEL->lcd->printf("X%4d Y%4d Z%7.2f", (int)round(this->pos[0]), (int)round(this->pos[1]), this->pos[2]); break;
-        case 2: THEPANEL->lcd->printf("%3d%% %2lu:%02lu %3u%% sd", this->current_speed, this->elapsed_time / 60, this->elapsed_time % 60, this->sd_pcnt_played); break;
-        case 3: THEPANEL->lcd->printf("%19s", this->get_status()); break;
-    }
+            break; */
 }
 
 const char *WatchScreen::get_status()
@@ -261,23 +310,18 @@ const char *WatchScreen::get_status()
         return THEPANEL->getMessage().c_str();
 
     if (THEKERNEL->is_halted())
-        return "HALTED Reset or M999";
+        return "HALTED";
 
     if (THEPANEL->is_suspended())
-        return "Suspended";
+        return "SUSPENDED";
 
-    if (THEPANEL->is_playing())
-        return THEPANEL->get_playing_file();
+    /*if (THEPANEL->is_playing())
+        return THEPANEL->get_playing_file();*/
 
-    if (!THEKERNEL->conveyor->is_queue_empty())
-        return "Printing";
+    if ((THEPANEL->is_playing())||(!THEKERNEL->conveyor->is_queue_empty()))
+        return "PRINTING";
 
-    const char *ip = get_network();
-    if (ip == NULL) {
-        return "Smoothie ready";
-    } else {
-        return ip;
-    }
+        return "READY";
 }
 
 void WatchScreen::set_speed()
@@ -293,7 +337,7 @@ const char *WatchScreen::get_network()
     if (ok) {
         uint8_t *ipaddr = (uint8_t *)returned_data;
         char buf[20];
-        int n = snprintf(buf, sizeof(buf), "IP %d.%d.%d.%d", ipaddr[0], ipaddr[1], ipaddr[2], ipaddr[3]);
+        int n = snprintf(buf, sizeof(buf), "IP: %d.%d.%d.%d", ipaddr[0], ipaddr[1], ipaddr[2], ipaddr[3]);
         buf[n] = 0;
         if (this->ipstr == nullptr) {
             this->ipstr = new char[n + 1];

@@ -36,7 +36,7 @@ ControlScreen::ControlScreen()
 void ControlScreen::on_enter()
 {
     THEPANEL->enter_menu_mode();
-    THEPANEL->setup_menu(4);
+    THEPANEL->setup_menu(3);
     get_current_pos(this->pos);
     this->refresh_menu();
     this->pos_changed = false;
@@ -86,7 +86,7 @@ void ControlScreen::display_menu_line(uint16_t line)
         case 0: THEPANEL->lcd->printf("Back");  break;
         case 1: this->display_axis_line('X'); break;
         case 2: this->display_axis_line('Y'); break;
-        case 3: this->display_axis_line('Z'); break;
+        case 3: break;//this->display_axis_line('Z'); break;
     }
 }
 
@@ -102,7 +102,7 @@ void ControlScreen::clicked_menu_entry(uint16_t line)
         case 0: THEPANEL->enter_screen(this->parent   ); break;
         case 1: this->enter_axis_control('X'); break;
         case 2: this->enter_axis_control('Y'); break;
-        case 3: this->enter_axis_control('Z'); break;
+        case 3: break; //this->enter_axis_control('Z'); break;
     }
 }
 
