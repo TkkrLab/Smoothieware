@@ -12,6 +12,8 @@ class KillButton : public Module {
 
     private:
         Pin kill_button;
+        Pin kill_button2;
+        Pin unkill_button;
         enum STATE {
             IDLE,
             KILL_BUTTON_DOWN,
@@ -25,7 +27,9 @@ class KillButton : public Module {
 
         struct {
             uint8_t unkill_timer:6;
-            volatile STATE state:4;
+            volatile STATE state1:4;
+            volatile STATE state2:4;
+            volatile STATE state3:4;
             bool unkill_enable:1;
         };
 };

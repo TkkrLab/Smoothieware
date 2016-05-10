@@ -16,6 +16,7 @@
 #include "Block.h"
 #include "checksumm.h"
 #include "ConfigValue.h"
+#include <wait_api.h>
 
 #include "libs/Pin.h"
 #include "Gcode.h"
@@ -143,6 +144,13 @@ void Laser::on_gcode_execute(void* argument){
     		requested_power = 1;
 
         this->laser_power = requested_power;
+    }
+    if ( gcode->has_letter('L' )){ //Added by Renze.
+        int time = gcode->get_int('L');
+        this->pwm_pin->write(this->laser_power);
+    	this->ttl_pin->set(1);
+        wait_us(time);
+    	this->ttl_pin->set(0);
     }
 
     if (this->ttl_used)

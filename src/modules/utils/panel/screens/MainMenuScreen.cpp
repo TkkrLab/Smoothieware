@@ -72,18 +72,18 @@ void MainMenuScreen::setupConfigureScreen()
         1.0F
         );
 
-    mvs->addMenuItem("Z steps/mm",
+    /*mvs->addMenuItem("Z steps/mm",
         []() -> float { return THEKERNEL->robot->actuators[2]->get_steps_per_mm(); },
         [](float v) { THEKERNEL->robot->actuators[2]->change_steps_per_mm(v); },
         0.1F,
         1.0F
-        );
+        );*/
 
-    mvs->addMenuItem("Z Home Ofs",
+    /*mvs->addMenuItem("Z Home Ofs",
         []() -> float { void *rd; PublicData::get_value( endstops_checksum, home_offset_checksum, &rd ); return rd==nullptr ? 0.0F : ((float*)rd)[2]; },
         [this](float v) { send_gcode("M206", 'Z', v); },
         0.01F
-        );
+        );*/
 
     mvs->addMenuItem("Contrast",
         []() -> float { return THEPANEL->lcd->getContrast(); },
@@ -100,7 +100,7 @@ void MainMenuScreen::setupConfigureScreen()
 void MainMenuScreen::on_enter()
 {
     THEPANEL->enter_menu_mode();
-    THEPANEL->setup_menu(7);
+    THEPANEL->setup_menu(4);//7);
     this->refresh_menu();
 }
 
@@ -121,9 +121,9 @@ void MainMenuScreen::display_menu_line(uint16_t line)
         case 1: if(THEKERNEL->is_halted()) THEPANEL->lcd->printf("Clear HALT"); else THEPANEL->lcd->printf(THEPANEL->is_playing() ? "Abort" : "Play"); break;
         case 2: THEPANEL->lcd->printf("Jog"); break;
         case 3: THEPANEL->lcd->printf("Prepare"); break;
-        case 4: THEPANEL->lcd->printf("Custom"); break;
-        case 5: THEPANEL->lcd->printf("Configure"); break;
-        case 6: THEPANEL->lcd->printf("Probe"); break;
+        case 4: break; //THEPANEL->lcd->printf("Custom"); break;
+        case 5: break; //THEPANEL->lcd->printf("Configure"); break;
+        case 6: break;//THEPANEL->lcd->printf("Probe"); break;
     }
 }
 
@@ -139,9 +139,9 @@ void MainMenuScreen::clicked_menu_entry(uint16_t line)
              else THEPANEL->enter_screen(this->file_screen); break;
         case 2: THEPANEL->enter_screen(this->jog_screen     ); break;
         case 3: THEPANEL->enter_screen(this->prepare_screen ); break;
-        case 4: THEPANEL->enter_screen(THEPANEL->custom_screen ); break;
-        case 5: setupConfigureScreen(); break;
-        case 6: THEPANEL->enter_screen((new ProbeScreen())->set_parent(this)); break;
+        case 4: break; //THEPANEL->enter_screen(THEPANEL->custom_screen ); break;
+        case 5: break; //setupConfigureScreen(); break;
+        case 6: break;//THEPANEL->enter_screen((new ProbeScreen())->set_parent(this)); break;
     }
 }
 

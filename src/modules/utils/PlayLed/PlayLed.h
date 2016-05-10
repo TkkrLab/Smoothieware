@@ -16,6 +16,7 @@ public:
 private:
     uint32_t led_tick(uint32_t);
     Pin  led;
+    Pin  led2;
     struct {
         uint8_t cnt:4;
     };
